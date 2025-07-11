@@ -75,9 +75,6 @@ def upload_file():
     flash(f"Error processing image: {str(e)}", "error")
     return redirect(url_for("index"))
   
-@app.route("/about")
-def about():
-  return render_template("about.html")
 
 @app.errorhandler(413)
 def too_large(e):
