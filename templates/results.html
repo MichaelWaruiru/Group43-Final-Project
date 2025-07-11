@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Detection Results - Plant Disease Detection{% endblock %}
+
+{% block content %}
+<!-- Results Header -->
+<section class="results-header py-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="mb-0">
+                    <i class="fas fa-microscope text-success me-2"></i>
+                    Detection Results
+                </h1>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Analyze Another Image
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Results Section -->
+<section class="results-section py-4">
+    <div class="container">
+        {% if results %}
+            {% for result in results %}
+                <div class="card mb-4 shadow-lg border-0">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            {% if result.disease == 'Healthy' %}
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                            {% else %}
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            {% endif %}
+                            {{ result.disease.replace('_', ' ').title() }}
+                        </h3>
+                        <span class="badge bg-{% if result.confidence > 80 %}success{% elif result.confidence > 50 %}warning{% else %}danger{% endif %} fs-6">
+                            {{ "%.1f"|format(result.confidence) }}% Confidence
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <!-- Disease Information -->
+                                <div class="mb-4">
+                                    <h5>
+                                        <i class="fas fa-info-circle text-primary me-2"></i>
+                                        Description
+                                    </h5>
+                                    <p class="lead">{{ result.info.description }}</p>
+                                </div>
+
+                                <!-- Severity -->
+                                <div class="mb-4">
+                                    <h6>
+                                        <i class="fas fa-thermometer-half me-2"></i>
+                                        Severity Level
+                                    </h6>
+                                    <span class="badge bg-{% if result.info.severity == 'None' %}success{% elif result.info.severity == 'Moderate' %}warning{% else %}danger{% endif %} fs-6">
+                                        {{ result.info.severity }}
+                                    </span>
+                                </div>
+
+                                <!-- Symptoms -->
+                                <div class="mb-4">
+                                    <h6>
+                                        <i class="fas fa-list-ul text-danger me-2"></i>
+                                        Symptoms
+                                    </h6>
+                                    <ul class="list-group list-group-flush">
+                                        {% for symptom in result.info.symptoms %}
+                                            <li class="list-group-item border-0 ps-0">
+                                                <i class="fas fa-chevron-right text-muted me-2"></i>
+                                                {{ symptom }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+
+                                <!-- Causes -->
+                                <div class="mb-4">
+                                    <h6>
+                                        <i class="fas fa-search text-info me-2"></i>
+                                        Possible Causes
+                                    </h6>
+                                    <ul class="list-group list-group-flush">
+                                        {% for cause in result.info.causes %}
+                                            <li class="list-group-item border-0 ps-0">
+                                                <i class="fas fa-chevron-right text-muted me-2"></i>
+                                                {{ cause }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <!-- Confidence Meter -->
+                                <div class="mb-4">
+                                    <h6>Confidence Level</h6>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <div class="progress-bar bg-{% if result.confidence > 80 %}success{% elif result.confidence > 50 %}warning{% else %}danger{% endif %}"
+                                            role="progressbar"
+                                            sstyle="width: {{ result.confidence|float|round(1) }}%"
+                                            aria-valuenow="{{ result.confidence }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{ "%.1f"|format(result.confidence) }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        {% if result.confidence > 80 %}
+                                            High confidence - Very likely accurate
+                                        {% elif result.confidence > 50 %}
+                                            Moderate confidence - Likely accurate
+                                        {% else %}
+                                            Low confidence - Consider additional analysis
+                                        {% endif %}
+                                    </small>
+                                </div>
+
+                                <!-- Quick Actions -->
+                                <div class="mb-4">
+                                    <h6>Quick Actions</h6>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-success btn-sm" onclick="toggleTreatments('{{ loop.index0 }}')">
+                                            <i class="fas fa-medical-kit me-1"></i>
+                                            View Treatments
+                                        </button>
+                                        <button class="btn btn-outline-info btn-sm" onclick="shareResult('{{ result.disease }}', '{{ result.confidence }}')">
+                                            <i class="fas fa-share me-1"></i>
+                                            Share Result
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Treatment Recommendations -->
+                        <div id="treatments-{{ loop.index0 }}" class="treatments-section mt-4" style="display: none;">
+                            <hr>
+                            <h5 class="mb-4">
+                                <i class="fas fa-medical-kit text-success me-2"></i>
+                                Treatment Recommendations
+                            </h5>
+                            
+                            <div class="row">
+                                <!-- Preventive Measures -->
+                                <div class="col-md-4 mb-4">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-shield-alt me-2"></i>
+                                                Preventive Measures
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled mb-0">
+                                                {% for treatment in result.treatments.preventive %}
+                                                    <li class="mb-2">
+                                                        <i class="fas fa-leaf text-success me-2"></i>
+                                                        {{ treatment }}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Organic Treatments -->
+                                <div class="col-md-4 mb-4">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-seedling me-2"></i>
+                                                Organic Treatments
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled mb-0">
+                                                {% for treatment in result.treatments.organic %}
+                                                    <li class="mb-2">
+                                                        <i class="fas fa-leaf text-warning me-2"></i>
+                                                        {{ treatment }}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Chemical Treatments -->
+                                <div class="col-md-4 mb-4">
+                                    <div class="card border-danger">
+                                        <div class="card-header bg-danger text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-flask me-2"></i>
+                                                Chemical Treatments
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if result.treatments.chemical %}
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for treatment in result.treatments.chemical %}
+                                                        <li class="mb-2">
+                                                            <i class="fas fa-vial text-danger me-2"></i>
+                                                            {{ treatment }}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <p class="text-muted mb-0">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No chemical treatments needed for healthy plants
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Important Notes -->
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Important:</strong> Always consult with local agricultural extension services before applying treatments. 
+                                Follow all safety guidelines and local regulations when using chemical treatments.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card border-danger">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3"></i>
+                    <h3>No Results Available</h3>
+                    <p class="text-muted">Unable to analyze the uploaded image. Please try again with a clearer image.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Try Again
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Action Buttons -->
+<section class="action-buttons py-4">
+    <div class="container">
+        <div class="text-center">
+            <a href="{{ url_for('index') }}" class="btn btn-success btn-lg me-3">
+                <i class="fas fa-camera me-2"></i>
+                Analyze Another Plant
+            </a>
+            <button class="btn btn-outline-primary btn-lg" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>
+                Print Results
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}
