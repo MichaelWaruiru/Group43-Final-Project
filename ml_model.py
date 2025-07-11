@@ -13,28 +13,17 @@ class PlantDiseaseModel:
   """Plant Disease Detection Model"""
   def __init__(self):
     self.model = None
-    self.class_names = [
-      "Healthy",
-      "Tomato_Early_Blight",
-      "Tomato_Late_Blight",
-      "Tomato_Leaf_Mold",
-      "Tomato_Septoria_Leaf_Spot",
-      "Tomato_Spider_Mites",
-      "Tomato_Target_Spot",
-      "Tomato_Yellow_Leaf_Curl_Virus",
-      "Tomato_Mosaic_Virus",
-      "Tomato_Bacterial_Spot",
-      "Potato_Early_Blight",
-      "Potato_Late_Blight",
-      "Potato_Healthy",
-      "Corn_Common_Rust",
-      "Corn_Northern_Leaf_Blight",
-      "Corn_Healthy",
-      "Pepper_Bacterial_Spot",
-      "Pepper_Healthy"
-    ]
+    self.dataset_path = "dataset"
+    self.class_names = self.load_class_names()
     self.img_size = (224, 224)
     self.load_or_create_model()
+    
+    
+  def load_class_names(self):
+    return sorted([
+      folder for folder in os.listdir(self.dataset_path)
+      if os.path.isdir(os.path.join(self.dataset_path, folder))
+    ])
     
     
   def create_model(self):
@@ -55,53 +44,52 @@ class PlantDiseaseModel:
     try:
       if os.path.exists(model_path):
         with open(model_path, "rb") as f:
-          self.model = pickle.load(f)
+          data = pickle.load(f)
+          self.model = data["model"]
+          self.class_names = data["class_names"]
         logging.info("Loaded existing model")
       else:
         self.model = self.create_model()
         # Create synthetic training data for demo
-        self.create_synthetic_training_data()
+        self.create_training_data()
         logging.info("Created new model with synthetic training")
     except Exception as e:
       logging.error(f"Error loading model:{str(e)}")
       self.model = self.create_model()
       logging.info("Created new model due to loading error")
       
-  def create_synthetic_training_data(self):
-    """Create synthetic training data for model initialization"""
-    try:
-      # Generate training data using image features like histograms and text features
-      n_samples = len(self.class_names) * 50
-      n_features = 100 # Feature vector size
+  def create_training_data(self):
+    X, y = [], []
+    for idx, class_name in enumerate(self.class_names):
+      class_dir = os.path.join(self.dataset_path, class_name)
+      for img_file in os.listdir(class_dir):
+        img_path = os.path.join(class_dir, img_file)
+        features = self.extract_features(img_path)
+        if features is not None:
+          X.append(features.flatten())
+          y.append(idx)
+    X = np.array(X)
+    y = np.array(y)
+    
+    # Split data for validation
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+    
+    # Train the model
+    self.model.fit(X_train, y_train)
       
-      X_train = np.random.random((n_samples, n_features))
-      y_train = np.repeat(range(len(self.class_names)), 50)
-      
-      # More strucuture to the data to make it realistic
-      for i in range(len(self.class_names)):
-        start_idx = i * 50
-        end_idx = (i + 1) * 50
-        # Add class-specific patterns
-        X_train[start_idx:end_idx, :10] += np.random.normal(i * 0.1, 0.05, (50, 10))
-        X_train[start_idx:end_idx, 10:20] += np.random.normal(i * 0.05, 0.02, (50, 10))
-        
-      # Split data for validation
-      X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-      
-      # Train the model
-      self.model.fit(X_train, y_train)
-      
-      # Evaluate the model
-      val_predictions = self.model.predict(X_val)
-      accuracy = accuracy_score(y_val, val_predictions)
-      logging.info(f"Model trained with validation accuracy: {accuracy:.2f}")
-      
-      # Save the model
-      with open("models/plant_disease_model.pkl") as f:
-        pickle.dump(self.model, f)
-      logging.info("Model trained and saved with synthetic data")
-    except Exception as e:
-      logging.error(f"Error creating synthetic training data: {str(e)}")
+    # Evaluate the model
+    val_predictions = self.model.predict(X_val)
+    accuracy = accuracy_score(y_val, val_predictions)
+    logging.info(f"Model trained with validation accuracy: {accuracy:.2f}")
+    
+    # Save the model
+    with open("models/plant_disease_model.pkl", "wb") as f:
+      pickle.dump({
+        "model": self.model,
+        "class_names": self.class_names
+      }, f)
+    logging.info("Model trained and saved with synthetic data")
+    
       
       
   def extract_features(self, image_path):
@@ -272,4 +260,3 @@ class PlantDiseaseModel:
     except Exception as e:
       logging.error(f"Error augmenting image: {str(e)}")
       return [cv2.imread(image_path)]
-            
