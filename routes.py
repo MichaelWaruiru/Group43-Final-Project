@@ -66,7 +66,8 @@ def upload_file():
       })
       
       # Clean up the uploaded file
-      os.remove(file_path)
+      if os.path.exists(file_path):
+        os.remove(file_path)
       
     return render_template("results.html", results=results, filename=filename)
     
