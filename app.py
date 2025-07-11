@@ -2,13 +2,16 @@ import os
 import logging
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Creatw Flask app
 app= Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "pLanT-DiSeAsE")
+app.secret_key = os.environ["SESSION_SECRET"]
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure upload settings
