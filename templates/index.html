@@ -37,6 +37,30 @@
     </div>
 </section>
 
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Capture Plant Image</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <video id="cameraVideo" class="w-100 rounded shadow-sm" autoplay playsinline></video>
+          <canvas id="captureCanvas" style="display: none;"></canvas>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" id="takePhotoBtn">
+            <i class="fas fa-camera me-1"></i>Take Photo
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>  
+
 <!-- Upload Section -->
 <section class="upload-section py-3 py-md-5 bg-body-secondary">
     <div class="container-fluid">
@@ -69,12 +93,16 @@
                                 <img id="previewImg" class="img-fluid rounded shadow" style="max-height: 250px; max-height: 300px;" alt="Preview">
                             </div>
                             
-                            <div class="d-grid">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-success btn-lg" id="cameraBtn">
+                                    <i class="fas fa-camera me-2"></i>
+                                    Capture Image
+                                </button>
                                 <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
                                     <i class="fas fa-search me-2"></i>
                                     Analyze Plant
                                 </button>
-                            </div>
+                            </div>                            
                         </form>
                     </div>
                 </div>

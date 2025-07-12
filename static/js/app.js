@@ -6,6 +6,14 @@ const uploadForm = document.getElementById('uploadForm');
 const submitBtn = document.getElementById('submitBtn');
 const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
 
+// For camera capture
+const cameraBtn = document.getElementById('cameraBtn');
+const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+const cameraVideo = document.getElementById('cameraVideo');
+const captureCanvas = document.getElementById('captureCanvas');
+const takePhotoBtn = document.getElementById('takePhotoBtn');
+
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -24,6 +32,69 @@ function initializeApp() {
     if (uploadForm) {
         uploadForm.addEventListener('submit', handleFormSubmit);
     }
+
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', openCamera);
+    }
+    if (takePhotoBtn) {
+        takePhotoBtn.addEventListener('click', capturePhoto);
+    }
+    
+    let cameraStream = null;
+
+    // Open camera modal and start video stream
+    async function openCamera() {
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+            cameraVideo.srcObject = cameraStream;
+            cameraModal.show();
+        } catch (error) {
+            console.error('Camera error:', error);
+            showAlert('Unable to access camera. Please allow permissions and ensure a camera is available.', 'error');
+        }
+    }
+
+    // Capture photo from video stream
+    function capturePhoto() {
+        if (!cameraStream) return;
+
+        const videoWidth = cameraVideo.videoWidth;
+        const videoHeight = cameraVideo.videoHeight;
+        captureCanvas.width = videoWidth;
+        captureCanvas.height = videoHeight;
+
+        const ctx = captureCanvas.getContext('2d');
+        ctx.drawImage(cameraVideo, 0, 0, videoWidth, videoHeight);
+
+        captureCanvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], 'captured_image.jpg', { type: 'image/jpeg' });
+                setFileInput(file);
+                showImagePreview(file);
+                cameraModal.hide();
+                stopCamera();
+                updateSubmitButton(true);
+            }
+        }, 'image/jpeg', 0.9);
+    }
+
+    // Stop camera stream
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+    }
+
+    // Set captured file to input
+    function setFileInput(file) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+    }
+
     
     // Setup drag and drop
     setupDragAndDrop();
