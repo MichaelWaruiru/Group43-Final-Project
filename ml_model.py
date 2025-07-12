@@ -98,7 +98,7 @@ class PlantDiseaseModel:
       # Load and preprocess image
       image = Image.open(image_path)
       image = image.convert("RGB")
-      image - image.resize(self.img_size)
+      image = image.resize(self.img_size)
       
       # Convert to numpy array
       img_array = np.array(image)
