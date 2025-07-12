@@ -5,6 +5,12 @@
   border-bottom: 1px solid rgba(25, 135, 84, 0.1);
 }
 
+/* Toggle css */
+#themeToggleBtn {
+  padding: 6px;
+  border: none;
+}
+
 /* Upload Section */
 .upload-section {
   background: var(--bs-secondary-bg);
