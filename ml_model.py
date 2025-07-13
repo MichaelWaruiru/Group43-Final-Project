@@ -122,9 +122,9 @@ class PlantDiseaseModel:
               self.class_names = json.load(f)
           logging.info("Loaded existing CNN model")
       else:
-          self.model = self.create_model()
-          self.train_model_with_synthetic_data()
-          logging.info("Created new CNN model")
+        self.model = self.create_model()
+        # self.train_model_with_synthetic_data()
+        logging.info("Created new CNN model")
     except Exception as e:
       logging.error(f"Error loading model: {str(e)}")
       self.model = self.create_model()
@@ -189,7 +189,7 @@ class PlantDiseaseModel:
       from keras.applications import MobileNetV2
       
       # Create data generators with augmentation
-      train_datagen = keras.preprocessing.image.ImageDataGenerator(
+      train_datagen = ImageDataGenerator(
         rescale=1./255,
         rotation_range=30,
         width_shift_range=0.2,
@@ -246,7 +246,7 @@ class PlantDiseaseModel:
       x = layers.GlobalMaxPooling2D()(x)
       x = layers.Dense(256, activation="relu")(x)
       x = layers.Dropout(0.5)(x)
-      outputs = layers.Dense(self.num_classes, activation="softmax")
+      outputs = layers.Dense(self.num_classes, activation="softmax")(x)
       
       self.model = keras.Model(inputs, outputs)
       self.model.compile(
@@ -283,7 +283,8 @@ class PlantDiseaseModel:
         epochs=epochs,
         validation_data=validation_generator,
         callbacks=callbacks,
-        verbose=1
+        verbose=1,
+        class_weight=class_weights
       )
       
       # Save class names
@@ -320,7 +321,7 @@ class PlantDiseaseModel:
         class_name = self.class_names[idx]
         
         # Only include predictions with reasonable confidence
-        if confidence > 0.05:  # Lower threshold for CNN
+        if confidence > 0.5:  # Lower threshold for CNN
           info = DISEASE_INFO.get(class_name, {})
           results.append({
             "class": class_name,
@@ -365,24 +366,25 @@ class PlantDiseaseModel:
       
       # Enhanced heuristics
       if green_ratio > 0.6 and brightness > 100 and color_variance < 1000:
+        fallback_class = "Healthy" if "Healthy" in self.class_names else self.class_names[0]
         return [{
-          "class": "Healthy",
+          "class": fallback_class,
           "confidence": 80.0
         }]
+        
+      # Choose a fallback severe disease if variance is high
       elif color_variance > 2000:  # High variance indicates spots/disease
-        if brightness < 80:
-          return [{
-            "class": "Tomato_Late_Blight",
-            "confidence": 65.0
-          }]
-        else:
-          return [{
-            "class": "Tomato_Early_Blight",
-            "confidence": 70.0
-          }]
-      else:
+        severe_candidates = [c for c in self.class_names if "Late_Blight" in c or "Virus" in c or "Severe" in c]
+        fallback_class = severe_candidates[0] if severe_candidates else self.class_names[0]
         return [{
-          "class": "Tomato_Leaf_Mold",
+          "class": fallback_class,
+          "confidence": 65.0
+        }]
+        
+      else:
+        fallback_class = self.class_names[0]
+        return [{
+          "class": fallback_class,
           "confidence": 60.0
         }]
             
@@ -396,7 +398,7 @@ class PlantDiseaseModel:
   def evaluate_model(self, test_dir):
     """Evaluate model on test dataset"""
     try:
-      test_datagen = keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
+      test_datagen = ImageDataGenerator(rescale=1./255)
       
       test_generator = test_datagen.flow_from_directory(
         test_dir,
