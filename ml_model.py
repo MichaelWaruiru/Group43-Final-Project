@@ -4,10 +4,12 @@ import numpy as np
 from PIL import Image
 import cv2
 import tensorflow as tf
-import keras
-from keras import layers
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report
 import json
+from disease_data import DISEASE_INFO
 
 
 class PlantDiseaseModel:
@@ -172,7 +174,7 @@ class PlantDiseaseModel:
       
       # Save model and class names
       self.model.save(self.model_path)
-      with open(self.class_names_path, 'w') as f:
+      with open(self.class_names_path, "w") as f:
         json.dump(self.class_names, f)
       
       logging.info("Model trained with synthetic data")
@@ -184,16 +186,18 @@ class PlantDiseaseModel:
   def train_with_real_data(self, train_dir, epochs=50, batch_size=32):
     """Train model with real PlantVillage dataset"""
     try:
+      from keras.applications import MobileNetV2
+      
       # Create data generators with augmentation
       train_datagen = keras.preprocessing.image.ImageDataGenerator(
         rescale=1./255,
-        rotation_range=20,
+        rotation_range=30,
         width_shift_range=0.2,
         height_shift_range=0.2,
         horizontal_flip=True,
-        zoom_range=0.2,
+        zoom_range=0.3,
         shear_range=0.2,
-        fill_mode='nearest',
+        fill_mode="nearest",
         validation_split=0.2
       )
       
@@ -202,8 +206,8 @@ class PlantDiseaseModel:
         train_dir,
         target_size=self.img_size,
         batch_size=batch_size,
-        class_mode='sparse',
-        subset='training',
+        class_mode="sparse",
+        subset="training",
         shuffle=True
       )
       
@@ -212,8 +216,8 @@ class PlantDiseaseModel:
         train_dir,
         target_size=self.img_size,
         batch_size=batch_size,
-        class_mode='sparse',
-        subset='validation',
+        class_mode="sparse",
+        subset="validation",
         shuffle=False
       )
       
@@ -224,25 +228,53 @@ class PlantDiseaseModel:
       # Recreate model with correct number of classes
       self.model = self.create_model()
       
+      # Compute class weights
+      from sklearn.utils import class_weight
+      class_weights = class_weight.compute_class_weight(
+        class_weight="balanced",
+        classes=np.unique(train_generator.classes),
+        y=train_generator.classes
+      )
+      class_weights = dict(enumerate(class_weights))
+      
+      # User MobileNetV2 for transfer training
+      base_model = MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights="imagenet")
+      base_model.trainable = False
+      
+      inputs = keras.Input(shape=(224, 224, 3))
+      x= base_model(inputs, training=False)
+      x = layers.GlobalMaxPooling2D()(x)
+      x = layers.Dense(256, activation="relu")(x)
+      x = layers.Dropout(0.5)(x)
+      outputs = layers.Dense(self.num_classes, activation="softmax")
+      
+      self.model = keras.Model(inputs, outputs)
+      self.model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+      )
+      
       # Callbacks for better training
       callbacks = [
           keras.callbacks.EarlyStopping(
-            monitor='val_accuracy',
+            monitor="val_accuracy",
             patience=10,
             restore_best_weights=True
           ),
           keras.callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
+            monitor="val_loss",
             factor=0.2,
             patience=5,
             min_lr=0.0001
           ),
           keras.callbacks.ModelCheckpoint(
             self.model_path,
-            monitor='val_accuracy',
+            monitor="val_accuracy",
             save_best_only=True,
             verbose=1
-          )
+          ),
+          keras.callbacks.TensorBoard(log_dir="logs")
       ]
       
       # Train the model
@@ -255,7 +287,7 @@ class PlantDiseaseModel:
       )
       
       # Save class names
-      with open(self.class_names_path, 'w') as f:
+      with open(self.class_names_path, "w") as f:
         json.dump(self.class_names, f)
       
       # Evaluate final model
@@ -289,10 +321,13 @@ class PlantDiseaseModel:
         
         # Only include predictions with reasonable confidence
         if confidence > 0.05:  # Lower threshold for CNN
-            results.append({
-              "class": class_name,
-              "confidence": confidence * 100
-            })
+          info = DISEASE_INFO.get(class_name, {})
+          results.append({
+            "class": class_name,
+            "confidence": confidence * 100,
+            "symptoms": info.get("symptoms", "Not available"),
+            "treatment": info.get("treatment", "Not available")
+          })
       
       # If no confident predictions, return top prediction
       if not results:
@@ -367,7 +402,7 @@ class PlantDiseaseModel:
         test_dir,
         target_size=self.img_size,
         batch_size=32,
-        class_mode='sparse',
+        class_mode="sparse",
         shuffle=False
       )
       
