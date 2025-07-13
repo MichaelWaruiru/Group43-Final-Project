@@ -3,10 +3,11 @@ import logging
 import numpy as np
 from PIL import Image
 import cv2
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-import pickle
+import tensorflow as tf
+import keras
+from keras import layers
+from sklearn.metrics import classification_report
+import json
 
 
 class PlantDiseaseModel:
@@ -16,10 +17,31 @@ class PlantDiseaseModel:
     self.dataset_path = "dataset"
     self.class_names = self.load_class_names()
     self.img_size = (224, 224)
+    self.num_classes = len(self.class_names)
+    self.model_path = "models/plant_disease_cnn_model.h5"
+    self.class_names_path = "models/class_names.json"
+    
+    # Create models directory
+    os.makedirs("models", exist_ok=True)
+    
     self.load_or_create_model()
     
     
   def load_class_names(self):
+    """Load class names from dataset directory"""
+    if not os.path.exists(self.dataset_path):
+      # Return default classes if dataset doesn't exist
+      return [
+          'Healthy', 'Tomato_Early_Blight', 'Tomato_Late_Blight',
+          'Tomato_Leaf_Mold', 'Tomato_Septoria_Leaf_Spot',
+          'Tomato_Spider_Mites', 'Tomato_Target_Spot',
+          'Tomato_Yellow_Leaf_Curl_Virus', 'Tomato_Mosaic_Virus',
+          'Tomato_Bacterial_Spot', 'Potato_Early_Blight',
+          'Potato_Late_Blight', 'Potato_Healthy',
+          'Corn_Common_Rust', 'Corn_Northern_Leaf_Blight',
+          'Corn_Healthy', 'Pepper_Bacterial_Spot', 'Pepper_Healthy'
+      ]
+      
     return sorted([
       folder for folder in os.listdir(self.dataset_path)
       if os.path.isdir(os.path.join(self.dataset_path, folder))
@@ -27,141 +49,235 @@ class PlantDiseaseModel:
     
     
   def create_model(self):
-    """Create Random Forest Model"""
-    model = RandomForestClassifier(
-      n_estimators=100,
-      random_state=42,
-      max_depth=10,
-      min_samples_split=5,
-      min_samples_leaf=2
+    """Create CNN Model"""
+    model = keras.Sequential([
+      keras.Input(shape=(224, 223, 3)),
+      
+     # Data augmentation layers
+      layers.RandomFlip("horizontal"),
+      layers.RandomRotation(0.1),
+      layers.RandomZoom(0.1),
+      layers.RandomContrast(0.1),
+      
+      # Rescaling
+      layers.Rescaling(1./255),
+      
+      # First Conv Block
+      layers.Conv2D(64, (3, 3), activation="relu"),
+      layers.BatchNormalization(),
+      layers.MaxPooling2D((2, 2)),
+      layers.Dropout(0.25),
+      
+      # Second Conv Block
+      layers.Conv2D(64, (3, 3), activation="relu"),
+      layers.BatchNormalization(),
+      layers.MaxPooling2D((2, 2)),
+      layers.Dropout(0.25),
+      
+      # Third Conv Block
+      layers.Conv2D(128, (3, 3), activation='relu'),
+      layers.BatchNormalization(),
+      layers.MaxPooling2D((2, 2)),
+      layers.Dropout(0.25),
+      
+      # Fourth Conv Block
+      layers.Conv2D(256, (3, 3), activation='relu'),
+      layers.BatchNormalization(),
+      layers.MaxPooling2D((2, 2)),
+      layers.Dropout(0.25),
+      
+      # Global Average Pooling
+      layers.GlobalAveragePooling2D(),
+      
+      # Dense layers
+      layers.Dense(512, activation='relu'),
+      layers.BatchNormalization(),
+      layers.Dropout(0.5),
+      
+      layers.Dense(256, activation='relu'),
+      layers.BatchNormalization(),
+      layers.Dropout(0.5),
+      
+      # Output layer
+      layers.Dense(self.num_classes, activation='softmax')
+      
+    ])
+    
+    model.compile(
+      optimizer=keras.optimizers.Adam(learning_rate=0.001),
+      loss="sparse_categorical_crossentropy",
+      metrics=["accuracy"]
     )
     
     return model
   
   def load_or_create_model(self):
-    # Load existing model or create new one
-    model_path = "models/plant_disease_model.pkl"
+    """Load existing model or create new one"""
     try:
-      if os.path.exists(model_path):
-        with open(model_path, "rb") as f:
-          data = pickle.load(f)
-          self.model = data["model"]
-          self.class_names = data["class_names"]
-        logging.info("Loaded existing model")
+      if os.path.exists(self.model_path) and os.path.exists(self.class_names_path):
+          self.model = keras.models.load_model(self.model_path)
+          with open(self.class_names_path, 'r') as f:
+              self.class_names = json.load(f)
+          logging.info("Loaded existing CNN model")
       else:
-        self.model = self.create_model()
-        # Create synthetic training data for demo
-        self.create_training_data()
-        logging.info("Created new model with synthetic training")
+          self.model = self.create_model()
+          self.train_model_with_synthetic_data()
+          logging.info("Created new CNN model")
     except Exception as e:
-      logging.error(f"Error loading model:{str(e)}")
+      logging.error(f"Error loading model: {str(e)}")
       self.model = self.create_model()
       logging.info("Created new model due to loading error")
-      
-  def create_training_data(self):
-    X, y = [], []
-    for idx, class_name in enumerate(self.class_names):
-      class_dir = os.path.join(self.dataset_path, class_name)
-      for img_file in os.listdir(class_dir):
-        img_path = os.path.join(class_dir, img_file)
-        features = self.extract_features(img_path)
-        if features is not None:
-          X.append(features.flatten())
-          y.append(idx)
-    X = np.array(X)
-    y = np.array(y)
-    
-    # Split data for validation
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-    
-    # Train the model
-    self.model.fit(X_train, y_train)
-      
-    # Evaluate the model
-    val_predictions = self.model.predict(X_val)
-    accuracy = accuracy_score(y_val, val_predictions)
-    logging.info(f"Model trained with validation accuracy: {accuracy:.2f}")
-    
-    # Save the model
-    with open("models/plant_disease_model.pkl", "wb") as f:
-      pickle.dump({
-        "model": self.model,
-        "class_names": self.class_names
-      }, f)
-    logging.info("Model trained and saved with synthetic data")
-    
-      
-      
-  def extract_features(self, image_path):
-    """Extract features from image for prediction"""
+  
+  def preprocess_image(self, image_path):
+    """Preprocess image for prediction"""
     try:
       # Load and preprocess image
-      image = Image.open(image_path)
-      image = image.convert("RGB")
+      image = Image.open(image_path).convert('RGB')
       image = image.resize(self.img_size)
       
-      # Convert to numpy array
+      # Convert to numpy array and normalize
       img_array = np.array(image)
+      img_array = np.expand_dims(img_array, axis=0)
       
-      # Extract various features
-      features = []
-      
-      # Colour histograms for each channel
-      for channel in range(3):
-        hist, _ = np.histogram(img_array[:, :, channel], bins=20, range=(0, 255))
-        features.extend(hist / np.sum(hist)) # Normalize
-        
-      # Basic statistics
-      features.extend([
-        np.mean(img_array),
-        np.std(img_array),
-        np.min(img_array),
-        np.max(img_array)
-      ])
-      
-      # Colour channel statistics
-      for channel in range(3):
-        channel_data = img_array[:, :, channel]
-        features.extend([
-          np.mean(channel_data),
-          np.std(channel_data),
-          np.percentile(channel_data, 25),
-          np.percentile(channel_data, 75)
-        ])
-        
-      # Testure features using OpenCV
-      gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
-      
-      # Sobel edges
-      sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-      sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-      features.extend([
-        np.mean(np.abs(sobel_x)),
-        np.mean(np.abs(sobel_y))
-      ])
-      
-      # pad or truncate for consistent feature vector size
-      if len(features) < 100:
-        features.extend([0] * (100 - len(features)))
-      else:
-        features = features[:100]
-        
-      return np.array(features).reshape(1, -1)
-    
+      return img_array
     except Exception as e:
-      logging.error(f"Error extracting features: {str(e)}")
-      # Returns default feature vector
-      return np.zeros((1, 100))
-    
+      logging.error(f"Error preprocessing image: {str(e)}")
+      return None
+  
+  def train_model_with_synthetic_data(self):
+    """Train model with synthetic data if real dataset is not available"""
+    try:
+      # Create synthetic training data
+      X_train = np.random.rand(1000, 224, 224, 3) * 255
+      y_train = np.random.randint(0, self.num_classes, 1000)
+      
+      X_val = np.random.rand(200, 224, 224, 3) * 255
+      y_val = np.random.randint(0, self.num_classes, 200)
+      
+      early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_accuracy",
+        patience=5,
+        restore_best_weights=True
+      )
+      
+      # Train model with reduced epochs for synthetic data
+      history = self.model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=5,  # Reduced for synthetic data
+        batch_size=32,
+        verbose=1,
+        callbacks=[early_stop]
+      )
+      
+      # Save model and class names
+      self.model.save(self.model_path)
+      with open(self.class_names_path, 'w') as f:
+        json.dump(self.class_names, f)
+      
+      logging.info("Model trained with synthetic data")
+      return history
+        
+    except Exception as e:
+      logging.error(f"Error training model: {str(e)}")
+  
+  def train_with_real_data(self, train_dir, epochs=50, batch_size=32):
+    """Train model with real PlantVillage dataset"""
+    try:
+      # Create data generators with augmentation
+      train_datagen = keras.preprocessing.image.ImageDataGenerator(
+        rescale=1./255,
+        rotation_range=20,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        horizontal_flip=True,
+        zoom_range=0.2,
+        shear_range=0.2,
+        fill_mode='nearest',
+        validation_split=0.2
+      )
+      
+      # Training generator
+      train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=self.img_size,
+        batch_size=batch_size,
+        class_mode='sparse',
+        subset='training',
+        shuffle=True
+      )
+      
+      # Validation generator
+      validation_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=self.img_size,
+        batch_size=batch_size,
+        class_mode='sparse',
+        subset='validation',
+        shuffle=False
+      )
+      
+      # Update class names from generator
+      self.class_names = list(train_generator.class_indices.keys())
+      self.num_classes = len(self.class_names)
+      
+      # Recreate model with correct number of classes
+      self.model = self.create_model()
+      
+      # Callbacks for better training
+      callbacks = [
+          keras.callbacks.EarlyStopping(
+            monitor='val_accuracy',
+            patience=10,
+            restore_best_weights=True
+          ),
+          keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.2,
+            patience=5,
+            min_lr=0.0001
+          ),
+          keras.callbacks.ModelCheckpoint(
+            self.model_path,
+            monitor='val_accuracy',
+            save_best_only=True,
+            verbose=1
+          )
+      ]
+      
+      # Train the model
+      history = self.model.fit(
+        train_generator,
+        epochs=epochs,
+        validation_data=validation_generator,
+        callbacks=callbacks,
+        verbose=1
+      )
+      
+      # Save class names
+      with open(self.class_names_path, 'w') as f:
+        json.dump(self.class_names, f)
+      
+      # Evaluate final model
+      val_loss, val_accuracy = self.model.evaluate(validation_generator, verbose=0)
+      logging.info(f"Final validation accuracy: {val_accuracy:.4f}")
+      
+      return history, val_loss, val_accuracy
+        
+    except Exception as e:
+      logging.error(f"Error training with real data: {str(e)}")
+      return None
   
   def predict(self, image_path):
-    """Predict disease from image"""
+    """Predict disease from image using CNN"""
     try:
-      # Extract features from image
-      features = self.extract_features(image_path)
+      # Preprocess image
+      img_array = self.preprocess_image(image_path)
+      if img_array is None:
+        return self.analyze_image_heuristics(image_path)
       
       # Make prediction
-      predictions = self.model.predict_proba(features)[0]
+      predictions = self.model.predict(img_array, verbose=0)[0]
       
       # Get top 3 predictions
       top_indices = np.argsort(predictions)[-3:][::-1]
@@ -172,91 +288,107 @@ class PlantDiseaseModel:
         class_name = self.class_names[idx]
         
         # Only include predictions with reasonable confidence
-        if confidence > 0.1:
-          results.append({
-            "class": class_name,
-            "confidence": confidence * 100
-          })
-          
-          # If no confident predictions, return the top prediction
-          if not results:
-            top_idx = np.argmax(predictions)
+        if confidence > 0.05:  # Lower threshold for CNN
             results.append({
-              "class": self.class_names[top_idx],
-              "confidence": float(predictions[top_idx]) * 100
+              "class": class_name,
+              "confidence": confidence * 100
             })
-            
-          return results
+      
+      # If no confident predictions, return top prediction
+      if not results:
+        top_idx = np.argmax(predictions)
+        results.append({
+          "class": self.class_names[top_idx],
+          "confidence": float(predictions[top_idx]) * 100
+        })
+      
+      return results
         
     except Exception as e:
       logging.error(f"Error making prediction: {str(e)}")
-      # Return the intelligent presiction based on image analysis
       return self.analyze_image_heuristics(image_path)
-    
-    
+
   def analyze_image_heuristics(self, image_path):
-    """Analyze image using heuristics when model fails"""
+    """Enhanced heuristic analysis when model fails"""
     try:
-      image = Image.open(image_path)
-      image = image.convert("RGB")
+      image = Image.open(image_path).convert('RGB')
       img_array = np.array(image)
       
-      # Basic heuristics based on colour anaylsis
-      avg_green = np.mean(img_array[:, :, 1])
-      avg_red = np.mean(img_array[:, :, 0])
-      avg_blue = np.mean(img_array[:, :, 2])
+      # Advanced color analysis
+      hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
       
-      # Simple heuristic: if predominantly green, likely healthy
-      if avg_green > avg_red and avg_green > avg_blue and avg_green > 100:
+      # Calculate color statistics
+      green_pixels = np.sum((hsv[:,:,0] >= 40) & (hsv[:,:,0] <= 80) & (hsv[:,:,1] > 50))
+      total_pixels = img_array.shape[0] * img_array.shape[1]
+      green_ratio = green_pixels / total_pixels
+      
+      # Calculate average brightness
+      brightness = np.mean(hsv[:,:,2])
+      
+      # Calculate color variance (indicator of spots/disease)
+      color_variance = np.var(img_array)
+      
+      # Enhanced heuristics
+      if green_ratio > 0.6 and brightness > 100 and color_variance < 1000:
         return [{
           "class": "Healthy",
-          "confidence": 75.0
+          "confidence": 80.0
         }]
-      # If brown/yellow tones, likely diseased
-      elif avg_red > avg_blue and avg_green > avg_blue:
-        return [{
-          "class": "Tomato_Early_Blight",
-          "confidence": 60.0
-        }]
+      elif color_variance > 2000:  # High variance indicates spots/disease
+        if brightness < 80:
+          return [{
+            "class": "Tomato_Late_Blight",
+            "confidence": 65.0
+          }]
+        else:
+          return [{
+            "class": "Tomato_Early_Blight",
+            "confidence": 70.0
+          }]
       else:
         return [{
-          "class": "Tomato_Late_Blight",
-          "confidence": 55.0
+          "class": "Tomato_Leaf_Mold",
+          "confidence": 60.0
         }]
-        
+            
     except Exception as e:
       logging.error(f"Error in heuristic analysis: {str(e)}")
       return [{
         "class": "Unable to detect disease",
         "confidence": 0.0
       }]
-      
   
-  def augment_image(self, image_path):
-    """Apply image augmentation for better prediction"""
+  def evaluate_model(self, test_dir):
+    """Evaluate model on test dataset"""
     try:
-      image = cv2.imread(image_path)
+      test_datagen = keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
       
-      # Apply various augmentation techniques
-      augmented_images = []
+      test_generator = test_datagen.flow_from_directory(
+        test_dir,
+        target_size=self.img_size,
+        batch_size=32,
+        class_mode='sparse',
+        shuffle=False
+      )
       
-      # Original image
-      augmented_images.append(image)
+      # Evaluate
+      test_loss, test_accuracy = self.model.evaluate(test_generator, verbose=1)
       
-      # Horizontal flip
-      flipped = cv2.flip(image, 1)
-      augmented_images.append(flipped)
+      # Detailed predictions for classification report
+      predictions = self.model.predict(test_generator, verbose=1)
+      predicted_classes = np.argmax(predictions, axis=1)
       
-      # Brightness adjustment
-      bright = cv2.convertScaleAbs(image, alpha=1.2, beta=10)
-      augmented_images.append(bright)
+      true_classes = test_generator.classes
+      class_labels = list(test_generator.class_indices.keys())
       
-      # Gaussian blur
-      blurred = cv2.GaussianBlur(image, (5, 5), 0)
-      augmented_images.append(blurred)
+      # Classification report
+      report = classification_report(true_classes, predicted_classes, target_names=class_labels)
       
-      return augmented_images
-    
+      logging.info(f"Test Accuracy: {test_accuracy:.4f}")
+      logging.info(f"Classification Report:\n{report}")
+      
+      return test_accuracy, report
+      
     except Exception as e:
-      logging.error(f"Error augmenting image: {str(e)}")
-      return [cv2.imread(image_path)]
+      logging.error(f"Error evaluating model: {str(e)}")
+      return None, None
