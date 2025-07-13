@@ -64,14 +64,14 @@ DISEASE_INFO = {
         'severity': 'Moderate'
     },
     'Potato_Early_Blight': {
-        'description': 'Early blight affects potato plants, causing leaf spots and tuber damage.',
-        'symptoms': ['Circular dark spots on leaves', 'Target-like patterns', 'Yellowing leaves'],
+        'description': 'Early blight is a common fungal disease of potatoes causing concentric leaf spots and potential stem lesions.',
+        'symptoms': ['Circular dark spots on leaves', 'Target-like patterns', 'Yellowing of foliage', 'Reduced yield'],
         'causes': ['Alternaria solani fungus', 'Warm humid weather', 'Plant stress'],
         'severity': 'Moderate'
     },
     'Potato_Late_Blight': {
-        'description': 'Late blight is a devastating disease of potatoes.',
-        'symptoms': ['Water-soaked lesions', 'White growth on leaf undersides', 'Tuber rot'],
+        'description': 'Late blight is a severe fungal disease that can destroy potato foliage and cause tuber rot.',
+        'symptoms': ['Dark lesions on leaves', 'Soft rot in tubers', 'White mold on leaf undersides in wet conditions'],
         'causes': ['Phytophthora infestans', 'Cool wet conditions', 'High humidity'],
         'severity': 'Severe'
     },
@@ -79,24 +79,6 @@ DISEASE_INFO = {
         'description': 'Your potato plant appears healthy!',
         'symptoms': ['Green vigorous foliage', 'No disease symptoms', 'Normal growth'],
         'causes': ['Good growing conditions', 'Proper care', 'Disease-free environment'],
-        'severity': 'None'
-    },
-    'Corn_Common_Rust': {
-        'description': 'Common rust is a fungal disease affecting corn leaves.',
-        'symptoms': ['Small reddish-brown pustules', 'Oval-shaped lesions', 'Yellowing leaves'],
-        'causes': ['Puccinia sorghi fungus', 'Moderate temperatures', 'High humidity'],
-        'severity': 'Moderate'
-    },
-    'Corn_Northern_Leaf_Blight': {
-        'description': 'Northern leaf blight causes large lesions on corn leaves.',
-        'symptoms': ['Large gray-green lesions', 'Cigar-shaped spots', 'Leaf death'],
-        'causes': ['Exserohilum turcicum fungus', 'Warm humid conditions', 'Dense plantings'],
-        'severity': 'Moderate'
-    },
-    'Corn_Healthy': {
-        'description': 'Your corn plant looks healthy!',
-        'symptoms': ['Green leaves', 'No lesions or spots', 'Normal development'],
-        'causes': ['Optimal growing conditions', 'Good plant health', 'Disease prevention'],
         'severity': 'None'
     },
     'Pepper_Bacterial_Spot': {
@@ -288,7 +270,98 @@ TREATMENT_RECOMMENDATIONS = {
             'Apply copper sulfate',
             'Combine with fungicides if needed'
         ]
-    }
+    },
+    'Tomato_Target_Spot': {
+        'preventive': [
+            'Ensure good air circulation',
+            'Avoid overhead watering',
+            'Remove affected foliage',
+            'Practice crop rotation'
+        ],
+        'organic': [
+            'Apply copper fungicide',
+            'Use neem oil spray',
+            'Mulch to reduce soil splash',
+            'Maintain dry foliage'
+        ],
+        'chemical': [
+            'Use chlorothalonil-based fungicide',
+            'Apply azoxystrobin spray',
+            'Rotate with mancozeb',
+            'Begin treatment at first signs of disease'
+        ]
+    },
+    'Tomato_Mosaic_Virus': {
+        'preventive': [
+            'Use virus-free seeds',
+            'Disinfect tools regularly',
+            'Avoid smoking near plants',
+            'Remove infected plants promptly'
+        ],
+        'organic': [
+            'Apply compost teas to boost immunity',
+            'Use resistant tomato varieties',
+            'Enhance soil health with organic matter',
+            'Sanitize hands and gloves between handling plants'
+        ],
+        'chemical': [
+            'No effective chemical treatment for viruses',
+            'Control insect vectors chemically',
+            'Use insecticidal soaps for aphid control',
+            'Combine with preventive measures'
+        ]
+    },
+    'Potato_Early_Blight': {
+        'preventive': [
+            'Rotate crops regularly',
+            'Remove and destroy infected plant material',
+            'Ensure proper plant spacing',
+            'Avoid overhead irrigation'
+        ],
+        'organic': [
+            'Apply neem oil spray',
+            'Use copper-based fungicide',
+            'Add compost to improve plant health',
+            'Mulch soil to avoid splashing spores'
+        ],
+        'chemical': [
+            'Apply mancozeb fungicide',
+            'Use chlorothalonil spray',
+            'Rotate with azoxystrobin',
+            'Start treatment early in the season'
+        ]
+    },
+    'Pepper_Healthy': {
+        'preventive': [
+            'Continue proper care',
+            'Maintain watering and nutrition balance',
+            'Inspect regularly for early symptoms',
+            'Avoid overcrowding'
+        ],
+        'organic': [
+            'Apply compost and mulch',
+            'Encourage beneficial insects',
+            'Use organic fertilizers',
+            'Rotate with legumes or corn'
+        ],
+        'chemical': []
+    },
+
+    'Potato_Healthy': {
+        'preventive': [
+            'Use certified seed potatoes',
+            'Rotate crops regularly',
+            'Maintain clean fields and tools',
+            'Monitor frequently for pests and disease'
+        ],
+        'organic': [
+            'Apply compost before planting',
+            'Mulch to conserve moisture and suppress weeds',
+            'Use beneficial microbes',
+            'Practice intercropping with legumes'
+        ],
+        'chemical': []
+    },
 }
 
 def get_disease_info(disease_name):
