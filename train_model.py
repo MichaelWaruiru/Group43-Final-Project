@@ -8,14 +8,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def main():
     parser = argparse.ArgumentParser(description='Train Plant Disease Detection Model')
-    parser.add_argument('--dataset_path', type=str, default='dataset', 
-                       help='Path to PlantVillage dataset')
-    parser.add_argument('--epochs', type=int, default=50, 
-                       help='Number of training epochs')
-    parser.add_argument('--batch_size', type=int, default=32, 
-                       help='Batch size for training')
-    parser.add_argument('--test_split', type=float, default=0.2, 
-                       help='Fraction of data to use for testing')
+    parser.add_argument('--dataset_path', type=str, default='dataset', help='Path to PlantVillage dataset')
+    parser.add_argument('--epochs', type=int, default=15, help='Number of training epochs')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training')
+    parser.add_argument('--test_split', type=float, default=0.2, help='Fraction of data to use for testing')
     
     args = parser.parse_args()
     
@@ -34,7 +30,7 @@ def main():
     logging.info(f"Starting training with dataset: {args.dataset_path}")
     logging.info(f"Epochs: {args.epochs}, Batch size: {args.batch_size}")
     
-    history = model.train_with_real_data(
+    history, _, val_accuracy = model.train_with_real_data(
         train_dir=args.dataset_path,
         epochs=args.epochs,
         batch_size=args.batch_size
@@ -42,7 +38,8 @@ def main():
     
     if history:
         logging.info("Training completed successfully!")
-        logging.info("Model saved to models/plant_disease_cnn_model.h5")
+        logging.info(f"Final Validation Accuracy: {val_accuracy:.4f}")
+        logging.info(f"Model saved to {model.model_path}")
         
         # Plot training history if matplotlib is available
         try:

@@ -8,10 +8,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluate Plant Disease Detection Model')
-    parser.add_argument('--test_path', type=str, required=True,
-                       help='Path to test dataset')
-    parser.add_argument('--model_path', type=str, default='models/plant_disease_cnn_model.h5',
-                       help='Path to trained model')
+    parser.add_argument('--test_path', type=str, help='Path to test dataset', default="dataset/test")
+    parser.add_argument('--model_path', type=str, default='models/plant_disease_cnn_model.keras', help='Path to trained model')
     
     args = parser.parse_args()
     

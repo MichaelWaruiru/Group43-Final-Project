@@ -9,7 +9,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report
 import json
-from disease_data import DISEASE_INFO
+from disease_data import DISEASE_INFO, TREATMENT_RECOMMENDATIONS
 
 
 class PlantDiseaseModel:
@@ -20,7 +20,7 @@ class PlantDiseaseModel:
     self.class_names = self.load_class_names()
     self.img_size = (224, 224)
     self.num_classes = len(self.class_names)
-    self.model_path = "models/plant_disease_cnn_model.h5"
+    self.model_path = "models/plant_disease_cnn_model.keras" 
     self.class_names_path = "models/class_names.json"
     
     # Create models directory
@@ -34,14 +34,21 @@ class PlantDiseaseModel:
     if not os.path.exists(self.dataset_path):
       # Return default classes if dataset doesn't exist
       return [
-          'Healthy', 'Tomato_Early_Blight', 'Tomato_Late_Blight',
-          'Tomato_Leaf_Mold', 'Tomato_Septoria_Leaf_Spot',
-          'Tomato_Spider_Mites', 'Tomato_Target_Spot',
-          'Tomato_Yellow_Leaf_Curl_Virus', 'Tomato_Mosaic_Virus',
-          'Tomato_Bacterial_Spot', 'Potato_Early_Blight',
-          'Potato_Late_Blight', 'Potato_Healthy',
-          'Corn_Common_Rust', 'Corn_Northern_Leaf_Blight',
-          'Corn_Healthy', 'Pepper_Bacterial_Spot', 'Pepper_Healthy'
+          'Pepper__bell___Bacterial_spot',
+          'Pepper__bell___healthy',
+          'Potato___Early_blight',
+          'Potato___healthy',
+          'Potato___Late_blight',
+          'Tomato__Target_Spot',
+          'Tomato__Tomato_mosaic_virus',
+          'Tomato__Tomato_YellowLeaf__Curl_Virus',
+          'Tomato_Bacterial_spot',
+          'Tomato_Early_blight',
+          'Tomato_healthy',
+          'Tomato_Late_blight',
+          'Tomato_Leaf_Mold',
+          'Tomato_Septoria_leaf_spot',
+          'Tomato_Spider_mites_Two_spotted_spider_mite'
       ]
       
     return sorted([
@@ -183,7 +190,7 @@ class PlantDiseaseModel:
     except Exception as e:
       logging.error(f"Error training model: {str(e)}")
   
-  def train_with_real_data(self, train_dir, epochs=50, batch_size=32):
+  def train_with_real_data(self, train_dir, epochs=15, batch_size=32):
     """Train model with real PlantVillage dataset"""
     try:
       from keras.applications import MobileNetV2
@@ -323,11 +330,14 @@ class PlantDiseaseModel:
         # Only include predictions with reasonable confidence
         if confidence > 0.5:  # Lower threshold for CNN
           info = DISEASE_INFO.get(class_name, {})
+          treatment = TREATMENT_RECOMMENDATIONS.get(class_name, {})
           results.append({
             "class": class_name,
             "confidence": confidence * 100,
             "symptoms": info.get("symptoms", "Not available"),
-            "treatment": info.get("treatment", "Not available")
+            "causes": info.get("causes", "Not available"),
+            "severity": info.get("severity", "Unknown"),
+            "treatment": treatment
           })
       
       # If no confident predictions, return top prediction
@@ -416,10 +426,28 @@ class PlantDiseaseModel:
       predicted_classes = np.argmax(predictions, axis=1)
       
       true_classes = test_generator.classes
-      class_labels = list(test_generator.class_indices.keys())
+      # class_labels = list(test_generator.class_indices.keys())
+      
+      # Predict on test set
+      predictions = self.model.predict(test_generator, verbose=1)
+      predicted_classes = np.argmax(predictions, axis=1)
+      
+      """This for evaluate_model.py to run with the provided test data avoiding errors"""
+      # Build classification report using training class names
+      from sklearn.metrics import classification_report
+      from sklearn.utils.multiclass import unique_labels
       
       # Classification report
-      report = classification_report(true_classes, predicted_classes, target_names=class_labels)
+      # report = classification_report(true_classes, predicted_classes, target_names=class_labels)
+      labels_in_test = sorted(list(unique_labels(true_classes, predicted_classes)))
+      label_names_in_test = [self.class_names[i] for i in labels_in_test]
+      
+      report = classification_report(
+        true_classes,
+        predicted_classes,
+        labels=labels_in_test,
+        target_names=label_names_in_test
+      )
       
       logging.info(f"Test Accuracy: {test_accuracy:.4f}")
       logging.info(f"Classification Report:\n{report}")
