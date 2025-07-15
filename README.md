@@ -129,8 +129,8 @@ python evaluate_model.py
 
 You will see:
 
-  ✅ Test accuracy
-  ✅ Detailed classification report
+  - Test accuracy
+  - Detailed classification report
 
 ---
 
@@ -146,15 +146,15 @@ Open your browser:
 http://127.0.0.1:5000/
 
 📸 Using the Web Interface:
-  1️⃣ Go to /
-  2️⃣ Upload a plant leaf image (png, jpg, jpeg, gif, bmp, webp)
-  3️⃣ View results with:
+  1. Go to /
+  2. Upload a plant leaf image (png, jpg, jpeg, gif, bmp, webp)
+  3.  View results with:
 
-  Disease class
+    - Disease class
 
-  Confidence score
+    - Confidence score
 
-  Description, symptoms, causes, severity
+    - Description, symptoms, causes, severity
 
   Treatment recommendations
 
