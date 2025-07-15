@@ -1,4 +1,4 @@
-# Group43-Final-Project: Plant Disease Detection Web App 🌿🔬
+# Group43-Final-Project: Plant Disease Detection Web App 🌿
 
 A full-stack deep learning web application to detect plant leaf diseases for Pepper, Tomato, and Potato using the PlantVillage dataset.
 
