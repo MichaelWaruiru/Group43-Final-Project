@@ -6,6 +6,7 @@ This project uses:
 - Convolutional Neural Networks (CNN) with Keras / TensorFlow
 - Flask for a web interface
 - PlantVillage dataset
+- Python 3.11.8
 
 ---
 
