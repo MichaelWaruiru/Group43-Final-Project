@@ -162,6 +162,7 @@ http://127.0.0.1:5000/
   Treatment recommendations
 
 ⚠️ *Notes on Dataset Splits*
+
 Your test set must contain all classes that the model was trained on.
 
 Even 5–10 images per class is sufficient.
