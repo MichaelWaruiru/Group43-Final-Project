@@ -21,6 +21,7 @@ This project uses:
 
 ## 📂 Project Structure
 
+```
 group43-Final-Project/
 │
 ├── app.py # Main Flask app entrypoint
@@ -59,6 +60,7 @@ group43-Final-Project/
 │ └── 500.html
 │
 └── logs/ # TensorBoard logs and training logs
+```
 
 ---
 
