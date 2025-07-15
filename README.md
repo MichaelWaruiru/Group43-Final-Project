@@ -32,7 +32,7 @@ group43-Final-Project/
 ├── evaluate_model.py # Command-line evaluation script
 ├── disease_data.py # Disease info and treatment database
 ├── requirements.txt # Python package requirements
-├── .env # Environment variables (SECRET)
+├── .env # Environment variables
 ├── .gitignore
 │
 ├── models/ # Saved Keras models (.keras) and class_names.json
