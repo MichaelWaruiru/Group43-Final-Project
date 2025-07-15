@@ -21,39 +21,33 @@ This project uses:
 
 ## 📂 Project Structure
 
-group43-final-project/
+Group43-Final-Project/
 │
-├── app.py # Main Flask app entrypoint
-├── routes.py # Flask routes and views
-├── ml_model.py # CNN model class and training logic
-├── train_model.py # Command-line training script
-├── evaluate_model.py # Command-line evaluation script
-├── disease_data.py # Disease info and treatment database
-├── requirements.txt # Python package requirements
-├── .env # Environment variables (SECRET)
+├── app.py                 # Flask entrypoint
+├── routes.py              # App views and routing
+├── ml_model.py            # CNN model logic
+├── train_model.py         # Model training script
+├── evaluate_model.py      # Model evaluation script
+├── disease_data.py        # Disease metadata & treatments
+├── requirements.txt       # Python dependencies
+├── .env                   # Secret environment variables
 ├── .gitignore
 │
-├── models/ # Saved Keras models (.keras) and class_names.json
-│
-├── dataset/ # PlantVillage dataset (train/test splits)
-│ ├── Pepper__bell___Bacterial_spot/
-│ ├── Pepper__bell___healthy/
-│ ├── Potato___Early_blight/
-│ └── ...
-│
-├── uploads/ # Uploaded images (temporary)
-│
-├── static/ # Static frontend files
-│ ├── css/
-│ └── js/
-│
-├── templates/ # HTML templates
-│ ├── index.html
-│ ├── results.html
-│ ├── 404.html
-│ └── 500.html
-│
-└── logs/ # TensorBoard logs and training logs
+├── models/                # Trained .keras models + class names
+├── dataset/               # Training dataset (split by class)
+│   ├── Pepper__bell___Bacterial_spot/
+│   ├── ...
+│   └── test/              # Evaluation dataset (10+ per class)
+├── uploads/               # Uploaded user images
+├── static/                # Frontend static assets
+│   ├── css/
+│   └── js/
+├── templates/             # HTML pages
+│   ├── index.html
+│   ├── results.html
+│   ├── 404.html
+│   └── 500.html
+├── logs/                  # TensorBoard and training logs
 
 ---
 
@@ -122,8 +116,8 @@ python evaluate_model.py
 
 You will see:
 
-✅ Test accuracy
-✅ Detailed classification report
+  ✅ Test accuracy
+  ✅ Detailed classification report
 
 ---
 
@@ -139,9 +133,9 @@ Open your browser:
 http://127.0.0.1:5000/
 
 📸 Using the Web Interface:
-1️⃣ Go to /
-2️⃣ Upload a plant leaf image (png, jpg, jpeg, gif, bmp, webp)
-3️⃣ View results with:
+  1️⃣ Go to /
+  2️⃣ Upload a plant leaf image (png, jpg, jpeg, gif, bmp, webp)
+  3️⃣ View results with:
 
   Disease class
 
@@ -158,14 +152,20 @@ Even 5–10 images per class is sufficient.
 
 This ensures the classification report works correctly without errors or warnings.
 
+---
+
 📜 License
 MIT License
 
-🙏 Acknowledgements
+---
+
+## 🙏 Acknowledgements:
 PlantVillage dataset (Kaggle)
 
 TensorFlow / Keras
 
 Flask
 
-✅ For questions or issues, please open an issue on this repository or contact the maintainers.
+---
+
+For questions or issues, please open an issue on this repository or contact me.
