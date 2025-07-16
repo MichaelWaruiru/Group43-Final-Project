@@ -190,7 +190,7 @@ class PlantDiseaseModel:
     except Exception as e:
       logging.error(f"Error training model: {str(e)}")
   
-  def train_with_real_data(self, train_dir, epochs=15, batch_size=32):
+  def train_with_real_data(self, train_dir, epochs=30, batch_size=32):
     """Train model with real PlantVillage dataset"""
     try:
       from keras.applications import MobileNetV2
@@ -233,7 +233,7 @@ class PlantDiseaseModel:
       self.num_classes = len(self.class_names)
       
       # Recreate model with correct number of classes
-      self.model = self.create_model()
+      # self.model = self.create_model()
       
       # Compute class weights
       from sklearn.utils import class_weight
@@ -246,13 +246,13 @@ class PlantDiseaseModel:
       
       # User MobileNetV2 for transfer training
       base_model = MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights="imagenet")
-      base_model.trainable = False
+      base_model.trainable = False #Initial freezes base model
       
       inputs = keras.Input(shape=(224, 224, 3))
       x= base_model(inputs, training=False)
       x = layers.GlobalMaxPooling2D()(x)
       x = layers.Dense(256, activation="relu")(x)
-      x = layers.Dropout(0.5)(x)
+      x = layers.Dropout(0.3)(x)
       outputs = layers.Dense(self.num_classes, activation="softmax")(x)
       
       self.model = keras.Model(inputs, outputs)
@@ -272,7 +272,7 @@ class PlantDiseaseModel:
           keras.callbacks.ReduceLROnPlateau(
             monitor="val_loss",
             factor=0.2,
-            patience=5,
+            patience=10,
             min_lr=0.0001
           ),
           keras.callbacks.ModelCheckpoint(
@@ -284,10 +284,34 @@ class PlantDiseaseModel:
           keras.callbacks.TensorBoard(log_dir="logs")
       ]
       
-      # Train the model
-      history = self.model.fit(
+      # Split epochs
+      initial_epochs = max(5, int(epochs * 0.4))
+      fine_tune_epochs = epochs - initial_epochs
+      
+      # Phase 1: Train top layers only with frozen base
+      history1 = self.model.fit(
         train_generator,
-        epochs=epochs,
+        epochs=initial_epochs,
+        validation_data=validation_generator,
+        callbacks=callbacks,
+        verbose=1,
+        class_weight=class_weights
+      )
+      
+      # Unfreeze base model for fine-tuning
+      # base_model.trainable = True
+      for layer in base_model.layers[:-20]:
+        layer.trainable = False
+      self.model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.0001),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+      )
+      
+      history2 = self.model.fit(
+        train_generator,
+        epochs=initial_epochs + fine_tune_epochs,
+        initial_epoch=history1.epoch[-1] + 1,
         validation_data=validation_generator,
         callbacks=callbacks,
         verbose=1,
@@ -302,7 +326,11 @@ class PlantDiseaseModel:
       val_loss, val_accuracy = self.model.evaluate(validation_generator, verbose=0)
       logging.info(f"Final validation accuracy: {val_accuracy:.4f}")
       
-      return history, val_loss, val_accuracy
+      # Combine histories
+      for key in history2.history:
+        history1.history[key].extend(history2[key])
+      
+      return history1, val_loss, val_accuracy
         
     except Exception as e:
       logging.error(f"Error training with real data: {str(e)}")
