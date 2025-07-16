@@ -328,7 +328,7 @@ class PlantDiseaseModel:
       
       # Combine histories
       for key in history2.history:
-        history1.history[key].extend(history2[key])
+        history1.history[key].extend(history2.history[key])
       
       return history1, val_loss, val_accuracy
         
