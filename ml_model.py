@@ -60,7 +60,7 @@ class PlantDiseaseModel:
   def create_model(self):
     """Create CNN Model"""
     model = keras.Sequential([
-      keras.Input(shape=(224, 223, 3)),
+      keras.Input(shape=(224, 224, 3)),
       
      # Data augmentation layers
       layers.RandomFlip("horizontal"),
@@ -114,7 +114,7 @@ class PlantDiseaseModel:
     
     model.compile(
       optimizer=keras.optimizers.Adam(learning_rate=0.001),
-      loss="sparse_categorical_crossentropy",
+      loss="categorical_crossentropy",
       metrics=["accuracy"]
     )
     
@@ -213,7 +213,7 @@ class PlantDiseaseModel:
         train_dir,
         target_size=self.img_size,
         batch_size=batch_size,
-        class_mode="sparse",
+        class_mode="categorical",
         subset="training",
         shuffle=True
       )
@@ -223,7 +223,7 @@ class PlantDiseaseModel:
         train_dir,
         target_size=self.img_size,
         batch_size=batch_size,
-        class_mode="sparse",
+        class_mode="categorical",
         subset="validation",
         shuffle=False
       )
@@ -234,6 +234,19 @@ class PlantDiseaseModel:
       
       # Recreate model with correct number of classes
       # self.model = self.create_model()
+      
+      # Predict labels
+      predictions = self.model.predict(validation_generator, verbose=1)
+      y_pred = np.argmax(predictions, axis=1)
+      y_true = validation_generator.classes
+      
+      # Build classification report
+      from sklearn.utils.multiclass import unique_labels
+      labels_present = sorted(list(unique_labels(y_true, y_pred)))
+      label_names = [self.class_names[i] for i in labels_present]
+      
+      report = classification_report(y_true, y_pred, target_names=label_names)
+      logging.info(f"\nClassification Report:\n{report}")
       
       # Compute class weights
       from sklearn.utils import class_weight
@@ -250,7 +263,7 @@ class PlantDiseaseModel:
       
       inputs = keras.Input(shape=(224, 224, 3))
       x= base_model(inputs, training=False)
-      x = layers.GlobalMaxPooling2D()(x)
+      x = layers.GlobalAveragePooling2D()(x)
       x = layers.Dense(256, activation="relu")(x)
       x = layers.Dropout(0.3)(x)
       outputs = layers.Dense(self.num_classes, activation="softmax")(x)
@@ -258,7 +271,7 @@ class PlantDiseaseModel:
       self.model = keras.Model(inputs, outputs)
       self.model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.001),
-        loss="sparse_categorical_crossentropy",
+        loss="categorical_crossentropy",
         metrics=["accuracy"]
       )
       
@@ -304,7 +317,7 @@ class PlantDiseaseModel:
         layer.trainable = False
       self.model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.0001),
-        loss="sparse_categorical_crossentropy",
+        loss="categorical_crossentropy",
         metrics=["accuracy"]
       )
       
@@ -442,7 +455,7 @@ class PlantDiseaseModel:
         test_dir,
         target_size=self.img_size,
         batch_size=32,
-        class_mode="sparse",
+        class_mode="categorical",
         shuffle=False
       )
       
