@@ -1,7 +1,21 @@
 import argparse
 import os
 import logging
+import tensorflow as tf # Required for GPU configuration
 from ml_model import PlantDiseaseModel
+
+# GPU Setup
+gpus = tf.config.list_physical_devices("GPU")
+if gpus:
+    try:
+        # Set memory growth to avoid OOM errors
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logging.info(f"Using GPU: {gpus}")
+    except RuntimeError as e:
+        logging.error(f"Error setting GPU memory growth: {e}")
+else:
+        logging.info("No GPU found. Training will run on CPU.")
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

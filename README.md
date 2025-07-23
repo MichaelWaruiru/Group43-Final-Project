@@ -3,10 +3,10 @@
 A full-stack deep learning web application to detect plant leaf diseases for Pepper, Tomato, and Potato using the PlantVillage dataset.
 
 This project uses:
-- Convolutional Neural Networks (CNN) with Keras / TensorFlow
+- Convolutional Neural Networks (CNN) with Keras / TensorFlow 2.10.0
 - Flask for a web interface
 - PlantVillage dataset
-- Python 3.11.8
+- Python 3.10.11
 
 ---
 
