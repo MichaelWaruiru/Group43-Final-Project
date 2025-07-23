@@ -3,10 +3,10 @@ import logging
 import numpy as np
 from PIL import Image
 import cv2
-import tensorflow as tf
+# import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras import layers
+from keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import classification_report
 import json
 from disease_data import DISEASE_INFO, TREATMENT_RECOMMENDATIONS
@@ -235,19 +235,6 @@ class PlantDiseaseModel:
       # Recreate model with correct number of classes
       # self.model = self.create_model()
       
-      # Predict labels
-      predictions = self.model.predict(validation_generator, verbose=1)
-      y_pred = np.argmax(predictions, axis=1)
-      y_true = validation_generator.classes
-      
-      # Build classification report
-      from sklearn.utils.multiclass import unique_labels
-      labels_present = sorted(list(unique_labels(y_true, y_pred)))
-      label_names = [self.class_names[i] for i in labels_present]
-      
-      report = classification_report(y_true, y_pred, target_names=label_names)
-      logging.info(f"\nClassification Report:\n{report}")
-      
       # Compute class weights
       from sklearn.utils import class_weight
       class_weights = class_weight.compute_class_weight(
@@ -347,7 +334,7 @@ class PlantDiseaseModel:
         
     except Exception as e:
       logging.error(f"Error training with real data: {str(e)}")
-      return None
+      return None, None, None
   
   def predict(self, image_path):
     """Predict disease from image using CNN"""
