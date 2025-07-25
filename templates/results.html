@@ -104,7 +104,7 @@
                                     <div class="progress mb-2" style="height: 25px;">
                                         <div class="progress-bar bg-{% if result.confidence > 80 %}success{% elif result.confidence > 50 %}warning{% else %}danger{% endif %}"
                                             role="progressbar"
-                                            sstyle="width: {{ result.confidence|float|round(1) }}%"
+                                            style="width: {{ result.confidence|float|round(1) }}%"
                                             aria-valuenow="{{ result.confidence }}"
                                             aria-valuemin="0"
                                             aria-valuemax="100">
