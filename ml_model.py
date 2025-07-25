@@ -3,11 +3,11 @@ import logging
 import numpy as np
 from PIL import Image
 import cv2
-# import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from keras.preprocessing.image import ImageDataGenerator
-from sklearn.metrics import classification_report
+import matplotlib.pyplot as plt
+from sklearn.utils import class_weight
 import json
 from disease_data import DISEASE_INFO, TREATMENT_RECOMMENDATIONS
 
@@ -17,45 +17,38 @@ class PlantDiseaseModel:
   def __init__(self):
     self.model = None
     self.dataset_path = "dataset"
-    self.class_names = self.load_class_names()
     self.img_size = (224, 224)
-    self.num_classes = len(self.class_names)
-    self.model_path = "models/plant_disease_cnn_model.keras" 
+   
     self.class_names_path = "models/class_names.json"
+    self.model_path = "models/plant_disease_cnn_model.keras" 
     
     # Create models directory
     os.makedirs("models", exist_ok=True)
+    
+    self.class_names = self.load_class_names()
+    self.num_classes = len(self.class_names)
     
     self.load_or_create_model()
     
     
   def load_class_names(self):
     """Load class names from dataset directory"""
-    if not os.path.exists(self.dataset_path):
-      # Return default classes if dataset doesn't exist
-      return [
-          'Pepper__bell___Bacterial_spot',
-          'Pepper__bell___healthy',
-          'Potato___Early_blight',
-          'Potato___healthy',
-          'Potato___Late_blight',
-          'Tomato__Target_Spot',
-          'Tomato__Tomato_mosaic_virus',
-          'Tomato__Tomato_YellowLeaf__Curl_Virus',
-          'Tomato_Bacterial_spot',
-          'Tomato_Early_blight',
-          'Tomato_healthy',
-          'Tomato_Late_blight',
-          'Tomato_Leaf_Mold',
-          'Tomato_Septoria_leaf_spot',
-          'Tomato_Spider_mites_Two_spotted_spider_mite'
-      ]
+    if os.path.exists(self.class_names_path):
+      with open(self.class_names_path, "r") as f:
+        return json.load(f)
       
-    return sorted([
-      folder for folder in os.listdir(self.dataset_path)
-      if os.path.isdir(os.path.join(self.dataset_path, folder))
-    ])
-    
+    # If dataset exists, load class names from directory
+    if os.path.exists(self.dataset_path):
+      class_names = sorted([
+        folder for folder in os.listdir(self.dataset_path)
+        if os.path.isdir(os.path.join(self.dataset_path, folder))
+      ])
+      with open(self.class_names_path, "w") as f:
+        json.dump(class_names, f)
+      return class_names
+    # Fallback to DISEASE_INFO keys if no dataset or class names file
+    logging.warning("Dataset not found, using default class names")
+    return sorted(list(DISEASE_INFO.keys()))
     
   def create_model(self):
     """Create CNN Model"""
@@ -114,7 +107,7 @@ class PlantDiseaseModel:
     
     model.compile(
       optimizer=keras.optimizers.Adam(learning_rate=0.001),
-      loss="categorical_crossentropy",
+      loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
       metrics=["accuracy"]
     )
     
@@ -145,7 +138,7 @@ class PlantDiseaseModel:
       image = image.resize(self.img_size)
       
       # Convert to numpy array and normalize
-      img_array = np.array(image)
+      img_array = np.array(image).astype("float32") / 255
       img_array = np.expand_dims(img_array, axis=0)
       
       return img_array
@@ -230,13 +223,24 @@ class PlantDiseaseModel:
       
       # Update class names from generator
       self.class_names = list(train_generator.class_indices.keys())
+      with open(self.class_names_path, "w") as f:
+        json.dump(self.class_names, f)
       self.num_classes = len(self.class_names)
       
-      # Recreate model with correct number of classes
-      # self.model = self.create_model()
+      # Visulaize and print class balance
+      counts = np.bincount(train_generator.classes)
+      for idx, count in enumerate(counts):
+        logging.info(f"Class {self.class_names[idx]}: {count} images")
+        
+      # Save class distrubition plot
+      plt.figure(figsize=(8, 3))
+      plt.bar(self.class_names, counts)
+      plt.xticks(rotation=90)
+      plt.tight_layout()
+      plt.savefig("class_distribution.png")
+      plt.close()
       
       # Compute class weights
-      from sklearn.utils import class_weight
       class_weights = class_weight.compute_class_weight(
         class_weight="balanced",
         classes=np.unique(train_generator.classes),
@@ -258,7 +262,7 @@ class PlantDiseaseModel:
       self.model = keras.Model(inputs, outputs)
       self.model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.001),
-        loss="categorical_crossentropy",
+        loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
         metrics=["accuracy"]
       )
       
@@ -300,11 +304,14 @@ class PlantDiseaseModel:
       
       # Unfreeze base model for fine-tuning
       # base_model.trainable = True
-      for layer in base_model.layers[:-20]:
+      for layer in base_model.layers[:-40]:
         layer.trainable = False
+      for layer in base_model.layers[-40:]:
+        layer.trainable = True
+        
       self.model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.0001),
-        loss="categorical_crossentropy",
+        loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
         metrics=["accuracy"]
       )
       
@@ -344,6 +351,11 @@ class PlantDiseaseModel:
       if img_array is None:
         return self.analyze_image_heuristics(image_path)
       
+      # Reload class_names to ensure consistency with model ouput
+      if not os.path.exists(self.class_names_path):
+        with open(self.class_names_path, "r") as f:
+          self.class_names = json.load(f)
+          
       # Make prediction
       predictions = self.model.predict(img_array, verbose=0)[0]
       

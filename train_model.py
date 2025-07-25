@@ -44,18 +44,20 @@ def main():
     logging.info(f"Starting training with dataset: {args.dataset_path}")
     logging.info(f"Epochs: {args.epochs}, Batch size: {args.batch_size}")
     
-    history, _, val_accuracy = model.train_with_real_data(
+    result = model.train_with_real_data(
         train_dir=args.dataset_path,
         epochs=args.epochs,
         batch_size=args.batch_size
     )
     
-    if history:
+    if result and all(result):
+        history, val_loss, val_accuracy = result
         logging.info("Training completed successfully!")
+        logging.info(f"Validation Loss: {val_loss:.4f}")
         logging.info(f"Final Validation Accuracy: {val_accuracy:.4f}")
         logging.info(f"Model saved to {model.model_path}")
         
-        # Plot training history if matplotlib is available
+        # Plot training history
         try:
             import matplotlib.pyplot as plt
             
