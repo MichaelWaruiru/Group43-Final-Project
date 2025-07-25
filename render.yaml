@@ -3,8 +3,8 @@ services:
     name: plant-disease-detector
     env: python
     buildCommand: |
-      pip install --upgrade pip
-      pip install --no-build-isolation -r requirements.txt
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: FLASK_ENV
