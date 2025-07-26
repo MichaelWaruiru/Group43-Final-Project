@@ -107,7 +107,7 @@ python train_model.py
 
 This will:
   1. Train the CNN or MobileNetV2 transfer model
-  2. Save the best model to models/plant_disease_cnn_model.h5
+  2. Save the best model to models/plant_disease_cnn_model.keras
   3. Save class names to models/class_names.json
   4. Plot and save training history as training_history.png
 
