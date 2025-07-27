@@ -42,6 +42,26 @@ function initializeApp() {
     
     let cameraStream = null;
 
+    // Theme toggle functionality
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const htmlEl = document.documentElement;
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        htmlEl.setAttribute('data-bs-theme', savedTheme);
+    }
+
+    // Toggle theme on click
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = htmlEl.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            htmlEl.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+
     // Open camera modal and start video stream
     async function openCamera() {
         try {
@@ -433,25 +453,3 @@ if (typeof module !== 'undefined' && module.exports) {
         showAlert
     };
 }
-
-// Theme Toggle
-document.addEventListener('DOMContentLoaded', () => {
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const htmlEl = document.documentElement;
-
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        htmlEl.setAttribute('data-bs-theme', savedTheme);
-    }
-
-    // Toggle theme on click
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', () => {
-            const currentTheme = htmlEl.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            htmlEl.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
-    }
-});
