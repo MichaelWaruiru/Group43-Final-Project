@@ -141,7 +141,7 @@ You will see:
 To start the Flask app:
 
 ```bash
-python app.py
+flask run
 ```
 
 Open your browser:
