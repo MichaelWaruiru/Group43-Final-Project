@@ -372,6 +372,10 @@
   outline-offset: 2px;
 }
 
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Ensure proper spacing on very small screens */
 @media (max-width: 350px) {
   .container-fluid {
