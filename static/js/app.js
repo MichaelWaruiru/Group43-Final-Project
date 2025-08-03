@@ -44,21 +44,29 @@ function initializeApp() {
 
     // Theme toggle functionality
     const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
     const htmlEl = document.documentElement;
 
     // Load saved theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         htmlEl.setAttribute('data-bs-theme', savedTheme);
+        themeIcon.classList.add(savedTheme === 'dark' ? 'fa-moon' : 'fa-sun');
+    } else {
+        // Default to light
+        htmlEl.setAttribute('data-bs-theme', 'light');
+        themeIcon.classList.add('fa-sun');
     }
 
     // Toggle theme on click
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener('click', () => {
-            const currentTheme = htmlEl.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const isDark = htmlEl.getAttribute('data-bs-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
             htmlEl.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
+            themeIcon.classList.remove('fa-sun', 'fa-moon');
+            themeIcon.classList.add(newTheme === 'dark' ? 'fa-moon' : 'fa-sun');
         });
     }
 
