@@ -10,7 +10,7 @@ This project uses:
 
 ---
 
-## 🚀 Features
+## Features
 
 ✅ Upload a leaf image and get predicted disease class  
 ✅ Shows disease description, symptoms, causes, severity  
@@ -89,7 +89,7 @@ Create a .env file in the root folder with your Flask session secret:
 
 ---
 
-## 🏋️‍♂️ Training the Model
+## Training the Model
 Make sure you have the PlantVillage dataset in the dataset/ folder, structured like:
 ```
     dataset/
@@ -112,7 +112,7 @@ This will:
   4. Plot and save training history as training_history.png
 
 
-## 📈 Evaluating the Model
+## Evaluating the Model
 
 You can evaluate the trained model on a separate test dataset:
 
@@ -137,7 +137,7 @@ You will see:
 
 ---
 
-## 🌐 Running the Web App
+## Running the Web App
 To start the Flask app:
 
 ```bash
@@ -148,7 +148,7 @@ Open your browser:
 
 http://127.0.0.1:5000/
 
-📸 Using the Web Interface:
+ Using the Web Interface:
   1. Go to /
   2. Upload a plant leaf image (png, jpg, jpeg, gif, bmp, webp)
   3.  View results with:
@@ -161,7 +161,7 @@ http://127.0.0.1:5000/
 
   Treatment recommendations
 
-⚠️ *Notes on Dataset Splits*
+*Notes on Dataset Splits*
 
 Your test set must contain all classes that the model was trained on.
 
@@ -171,7 +171,7 @@ This ensures the classification report works correctly without errors or warning
 
 ---
 
-📜 License
+## License
 MIT License
 
 ---
