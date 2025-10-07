@@ -15,7 +15,7 @@ app.secret_key = os.environ["SESSION_SECRET"]
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure upload settings
-app.config["UPLOAD_FOLDER"] = "/tmp/uploads"
+app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024 # 16MB max file size
 
 # Upload directory if it exists or not
